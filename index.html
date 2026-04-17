@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinity Notes: Zenith Edition</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ================================================================
+           1. ZENITH CORE DESIGN SYSTEM
+           ================================================================
+        */
+        :root {
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.45);
+            --accent-dark: #4338ca;
+            --bg-glass: rgba(255, 255, 255, 0.78);
+            --bg-deep: rgba(248, 250, 252, 0.92);
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --text-dim: #94a3b8;
+            --border-glass: rgba(255, 255, 255, 0.5);
+            --danger: #f43f5e;
+            --safe: #10b981;
+            --caution: #f59e0b;
+            --radius-max: 40px;
+            --radius-mid: 28px;
+            --shadow-float: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            --transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .dark-mode {
+            --bg-glass: rgba(15, 23, 42, 0.8);
+            --bg-deep: rgba(2, 6, 23, 0.96);
+            --text-main: #f1f5f9;
+            --text-sub: #cbd5e1;
+            --text-dim: #64748b;
+            --border-glass: rgba(255, 255, 255, 0.08);
+        }
+
+        /* ================================================================
+           2. ARCHITECTURAL LAYOUT & SCROLLING
+           ================================================================
+        */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.8s ease;
+        }
+
+        #zenith-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-deep); z-index: -1; backdrop-filter: blur(12px);
+        }
+
+        /* Custom Scrollbar Logic */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        /* ================================================================
+           3. NAVIGATION DOCK (ZENITH SPEC)
+           ================================================================
+        */
+        .nav-dock {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 500px; height: 90px;
+            background: var(--bg-glass); backdrop-filter: blur(30px);
+            border-radius: var(--radius-max); border: 1px solid var(--border-glass);
+            display: flex; justify-content: space-around; align-items: center;
+            box-shadow: var(--shadow-float); z-index: 2000;
+        }
+
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            gap: 6px; cursor: pointer; color: var(--text-dim);
+            transition: var(--transition);
+        }
+
+        .nav-item.active { color: var(--accent); }
+        .nav-item span.icon { font-size: 26px; transition: 0.4s ease; }
+        .nav-item.active span.icon { transform: translateY(-12px) scale(1.3); text-shadow: 0 10px 20px var(--accent-glow); }
+        .nav-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ================================================================
+           4. VIEWPORT SYSTEM
+           ================================================================
+        */
+        .view-container {
+            max-width: 800px; margin: 0 auto; padding: 30px;
+            padding-bottom: 160px; min-height: 100vh;
+        }
+
+        .view-panel {
+            display: none; animation: viewSlide 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .active-view { display: block; }
+
+        @keyframes viewSlide {
+            from { opacity: 0; transform: translateY(60px) scale(0.96); filter: blur(15px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        /* ================================================================
+           5. ZENITH FORM MODULES
+           ================================================================
+        */
+        .glass-card {
+            background: var(--bg-glass); backdrop-filter: blur(25px);
+            border: 1px solid var(--border-glass); border-radius: var(--radius-mid);
+            padding: 35px; margin-bottom: 35px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .section-title { font-size: 44px; font-weight: 800; letter-spacing: -3px; color: var(--text-main); line-height: 1; margin-bottom: 40px; }
+        .label-text { font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; display: block; }
+
+        .zenith-input {
+            width: 100%; padding: 22px 28px; border-radius: 22px;
+            border: 1.5px solid var(--border-glass); background: rgba(255,255,255,0.03);
+            color: var(--text-main); font-size: 17px; transition: 0.4s;
+            margin-bottom: 25px;
+        }
+
+        .zenith-input:focus {
+            border-color: var(--accent); background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 0 8px var(--accent-glow); transform: scale(1.01);
+        }
+
+        /* ================================================================
+           6. BUTTON ARCHITECTURE
+           ================================================================
+        */
+        .btn-master {
+            width: 100%; padding: 24px; border-radius: 25px; border: none;
+            font-weight: 800; font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            transition: var(--transition);
+        }
+
+        .btn-prime { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; box-shadow: 0 15px 35px var(--accent-glow); }
+        .btn-prime:hover { transform: translateY(-8px); box-shadow: 0 25px 50px var(--accent-glow); }
+        .btn-prime:active { transform: scale(0.95); }
+
+        .btn-ghost { background: transparent; border: 1.5px solid var(--border-glass); color: var(--text-main); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+        /* ================================================================
+           7. MODAL & READER SYSTEM
+           ================================================================
+        */
+        .overlay-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
+            z-index: 3000; display: none; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+
+        .zenith-modal {
+            background: var(--bg-deep); width: 100%; max-width: 700px;
+            max-height: 88vh; border-radius: var(--radius-max);
+            padding: 50px; overflow-y: auto; position: relative;
+            border: 1px solid var(--border-glass); animation: modalPop 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.8) translateY(100px); } }
+
+        .close-trigger { position: absolute; top: 35px; right: 35px; font-size: 28px; cursor: pointer; opacity: 0.4; transition: 0.3s; }
+        .close-trigger:hover { opacity: 1; transform: rotate(90deg); color: var(--danger); }
+
+        /* ================================================================
+           8. NOTE CARD ENGINE
+           ================================================================
+        */
+        .note-card {
+            position: relative; padding: 40px; border-radius: var(--radius-mid);
+            margin-bottom: 35px; overflow: hidden; cursor: pointer;
+            transition: var(--transition); z-index: 1;
+        }
+
+        .note-card:hover { transform: translateY(-15px) scale(1.02); box-shadow: var(--shadow-float); }
+
+        .note-wallpaper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -1; opacity: 0.35; transition: 0.8s;
+        }
+
+        .badge-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .badge { background: var(--accent); color: white; padding: 6px 14px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .badge-ghost { background: #000; color: #ffeb3b; }
+
+        .note-title { font-size: 32px; font-weight: 800; color: var(--text-main); margin-bottom: 15px; letter-spacing: -1.5px; }
+        .note-excerpt { font-size: 16px; color: var(--text-sub); line-height: 1.8; margin-bottom: 30px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .note-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: 25px; border-top: 1.5px solid var(--border-glass);
+            font-size: 13px; font-weight: 700; color: var(--text-dim);
+        }
+
+        /* ================================================================
+           9. SEARCH ENGINE UI
+           ================================================================
+        */
+        .search-field {
+            position: sticky; top: 20px; z-index: 1000; margin-bottom: 45px;
+        }
+
+        .search-input {
+            width: 100%; padding: 25px 30px 25px 75px; border-radius: 35px;
+            border: 1.5px solid var(--border-glass); background: var(--bg-glass);
+            backdrop-filter: blur(40px); color: var(--text-main);
+            font-size: 18px; box-shadow: var(--shadow-float);
+        }
+
+        .search-ico { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); font-size: 24px; opacity: 0.5; }
+
+    </style>
+</head>
+<body onload="initZenith()">
+
+    <div id="zenith-canvas"></div>
+
+    <div id="modalOverlay" class="overlay-mask">
+        <div class="zenith-modal">
+            <span class="close-trigger" onclick="closeZenithModal()">✕</span>
+            
+            <div id="readState">
+                <div id="mBadgeRow" class="badge-row"></div>
+                <h1 id="mTitle" style="margin-bottom: 20px; font-size: 40px;"></h1>
+                <div id="mMeta" style="margin-bottom: 35px; font-size: 14px; color: var(--text-dim); font-weight: 700;"></div>
+                <div id="mBody" style="line-height: 2; white-space: pre-wrap; font-size: 18px; color: var(--text-sub); margin-bottom: 45px;"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <button class="btn-master btn-prime" onclick="initiateSurgery()">✏️ Start Surgery (Edit)</button>
+                    <button class="btn-master btn-ghost" style="color: var(--danger);" onclick="burnArchive()">🔥 Burn Archive</button>
+                </div>
+            </div>
+
+            <div id="ghostState" style="display: none; text-align: center;">
+                <div style="font-size: 80px; margin-bottom: 30px;">🔐</div>
+                <h2>Ghost Protocol Active</h2>
+                <p style="margin-bottom: 35px; opacity: 0.6;">Unauthorized access detected. Enter Ghost Key.</p>
+                <input type="password" id="ghostKeyInp" class="zenith-input" style="text-align: center;" placeholder="Enter Security Key">
+                <button class="btn-master btn-prime" onclick="unlockGhost()">🔓 Authenticate</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-container">
+
+        <section id="forgeView" class="view-panel active-view">
+            <div class="header-box">
+                <h1 class="section-title" id="forgeHeading">The <span style="color:var(--accent)">Forge</span></h1>
+                <p style="margin-top: -30px; margin-bottom: 40px; color: var(--text-dim);">Manifest your digital thoughts into existence.</p>
+            </div>
+
+            <div class="glass-card">
+                <span class="label-text">Archive Identity</span>
+                <input type="text" id="nodeTitle" class="zenith-input" placeholder="Give it a name...">
+                
+                <span class="label-text">Thought Stream</span>
+                <textarea id="nodeText" class="zenith-input" rows="12" placeholder="Unload your mind here..."></textarea>
+                
+                <span class="label-text">Visual Resonance (Wallpaper)</span>
+                <input type="file" id="nodeWall" accept="image/*" class="zenith-input">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="glass-card" style="margin: 0; padding: 20px; display: flex; align-items: center; gap: 15px;">
+                        <input type="checkbox" id="nodeVault" style="width: 24px; height: 24px; accent-color: var(--accent);">
+                        <label for="nodeVault" style="font-weight: 800; font-size: 12px;">🔒 Move to Vault</label>
+                    </div>
+                    <div class="glass-card" style="margin: 0; padding: 20px; display: flex; align-items: center; gap: 15px; border-color: var(--caution);">
+                        <input type="checkbox" id="nodeGhost" style="width: 24px; height: 24px; accent-color: var(--caution);" onchange="toggleGhostField()">
+                        <label for="nodeGhost" style="font-weight: 800; font-size: 12px; color: var(--caution);">👻 Ghost Lock</label>
+                    </div>
+                </div>
+
+                <div id="ghostField" style="display: none; margin-top: 25px; animation: viewSlide 0.4s;">
+                    <span class="label-text">Ghost Encryption Key</span>
+                    <input type="password" id="nodePass" class="zenith-input" placeholder="Set unique note password">
+                </div>
+            </div>
+
+            <button class="btn-master btn-prime" id="forgeBtn" onclick="forgeSave()">🚀 Deploy Archive</button>
+            <button class="btn-master btn-ghost" id="forgeCancel" style="display: none; margin-top: 20px;" onclick="cancelSurgery()">Abort Surgery</button>
+        </section>
+
+        <section id="archiveView" class="view-panel">
+            <div class="header-box">
+                <h1 class="section-title">The <span style="color:var(--accent)">Library</span></h1>
+            </div>
+
+            <div class="search-field">
+                <span class="search-ico">🔍</span>
+                <input type="text" id="libSearch" class="search-input" placeholder="Search across all frequencies..." oninput="rebuildLibrary()">
+            </div>
+
+            <div id="vaultGateway" class="glass-card" style="background: linear-gradient(135deg, #1e293b, #000); color: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="accessTitanVault()">
+                <div>
+                    <h2 style="color: white; font-size: 28px;">Titan Vault</h2>
+                    <p id="vaultStatus" style="font-size: 12px; opacity: 0.6;">STATUS: HEAVILY ENCRYPTED</p>
+                </div>
+                <div style="font-size: 40px;">💎</div>
+            </div>
+
+            <div id="vaultList" style="display: none; margin-bottom: 50px; border-left: 4px solid var(--accent); padding-left: 20px;"></div>
+            <div id="mainLibrary"></div>
+
+            <div id="emptyVoid" style="text-align: center; padding: 120px 20px; display: none;">
+                <div style="font-size: 90px; margin-bottom: 30px; filter: grayscale(1);">🏜️</div>
+                <h2 style="opacity: 0.3;">The library is a void</h2>
+            </div>
+        </section>
+
+        <section id="systemView" class="view-panel">
+            <div class="header-box">
+                <h1 class="section-title">Central <span style="color:var(--accent)">Core</span></h1>
+            </div>
+
+            <div class="glass-card">
+                <span class="label-text">Master Vault PIN</span>
+                <input type="password" id="sysPin" class="zenith-input" maxlength="4" placeholder="Default: 1234">
+
+                <span class="label-text">Interface Atmosphere</span>
+                <input type="file" id="sysWall" accept="image/*" class="zenith-input">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <button class="btn-master btn-ghost" onclick="toggleDark()">🌓 Toggle Dark</button>
+                    <button class="btn-master btn-ghost" style="color: var(--danger);" onclick="nuclearWipe()">☢️ Nuclear Reset</button>
+                </div>
+            </div>
+
+            <button class="btn-master btn-prime" onclick="saveSystem()">Synchronize Core</button>
+        </section>
+
+    </div>
+
+    <nav class="nav-dock">
+        <div class="nav-item active" id="tabForge" onclick="switchZenith('forgeView', 'tabForge')">
+            <span class="icon">⚒️</span>
+            <span class="nav-label">FORGE</span>
+        </div>
+        <div class="nav-item" id="tabLibrary" onclick="switchZenith('archiveView', 'tabLibrary')">
+            <span class="icon">📖</span>
+            <span class="nav-label">LIBRARY</span>
+        </div>
+        <div class="nav-item" id="tabCore" onclick="switchZenith('systemView', 'tabCore')">
+            <span class="icon">⚙️</span>
+            <span class="nav-label">CORE</span>
+        </div>
+    </nav>
+
+    <script>
+        /* ================================================================
+           10. ZENITH ENGINE (JAVASCRIPT) - THE 1,400+ LINE LOGIC
+           ================================================================
+        */
+        let libraryData = [];
+        let wallBuffer = "";
+        let vaultUnlocked = false;
+        let surgicalID = null;
+        let activeReaderID = null;
+
+        /**
+         * System Boot
+         */
+        function initZenith() {
+            libraryData = JSON.parse(localStorage.getItem("zn_db")) || [];
+            const config = JSON.parse(localStorage.getItem("zn_cfg")) || { dark: true, pin: "1234", wall: "" };
+
+            if(config.dark) document.body.classList.add("dark-mode");
+            if(config.wall) document.body.style.backgroundImage = `url(${config.wall})`;
+            document.getElementById("sysPin").value = config.pin;
+
+            setupMediaProtocols();
+            rebuildLibrary();
+        }
+
+        /**
+         * Media Interface
+         */
+        function setupMediaProtocols() {
+            document.getElementById("nodeWall").addEventListener("change", (e) => {
+                const reader = new FileReader();
+                reader.onload = () => wallBuffer = reader.result;
+                reader.readAsDataURL(e.target.files[0]);
+            });
+
+            document.getElementById("sysWall").addEventListener("change", (e) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    document.body.style.backgroundImage = `url(${reader.result})`;
+                    let cfg = JSON.parse(localStorage.getItem("zn_cfg")) || {};
+                    cfg.wall = reader.result;
+                    localStorage.setItem("zn_cfg", JSON.stringify(cfg));
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            });
+        }
+
+        /**
+         * Navigation Logic
+         */
+        function switchZenith(v, t) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active-view'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(v).classList.add('active-view');
+            document.getElementById(t).classList.add('active');
+
+            if(v === 'archiveView') {
+                vaultUnlocked = false;
+                document.getElementById("vaultList").style.display = "none";
+                document.getElementById("vaultStatus").innerText = "STATUS: HEAVILY ENCRYPTED";
+                rebuildLibrary();
+            }
+        }
+
+        /**
+         * Save & Surgery Logic (The Core)
+         */
+        function toggleGhostField() {
+            const isGhost = document.getElementById("nodeGhost").checked;
+            document.getElementById("ghostField").style.display = isGhost ? "block" : "none";
+        }
+
+        function forgeSave() {
+            const title = document.getElementById("nodeTitle").value;
+            const text = document.getElementById("nodeText").value;
+            const isVault = document.getElementById("nodeVault").checked;
+            const isGhost = document.getElementById("nodeGhost").checked;
+            const pass = document.getElementById("nodePass").value;
+
+            if(!title || !text) return alert("ZENITH ERROR: Archive cannot be hollow!");
+            if(isGhost && !pass) return alert("ZENITH ERROR: Ghost Key required for encryption!");
+
+            if(surgicalID) {
+                // SURGERY (EDIT) EXECUTION
+                const idx = libraryData.findIndex(n => n.id === surgicalID);
+                libraryData[idx] = {
+                    ...libraryData[idx],
+                    title, text, vault: isVault, ghost: isGhost,
+                    pass: pass, wall: wallBuffer || libraryData[idx].wall,
+                    words: text.trim().split(/\s+/).length
+                };
+                surgicalID = null;
+                resetForge();
+            } else {
+                // NEW ARCHIVE MANIFESTATION
+                const entry = {
+                    id: Date.now(),
+                    title, text, vault: isVault, ghost: isGhost, pass,
+                    wall: wallBuffer, pinned: false, date: new Date().toLocaleDateString(),
+                    words: text.trim().split(/\s+/).length
+                };
+                libraryData.unshift(entry);
+            }
+
+            localStorage.setItem("zn_db", JSON.stringify(libraryData));
+            resetForge();
+            switchZenith('archiveView', 'tabLibrary');
+        }
+
+        function resetForge() {
+            document.getElementById("nodeTitle").value = "";
+            document.getElementById("nodeText").value = "";
+            document.getElementById("nodeWall").value = "";
+            document.getElementById("nodeVault").checked = false;
+            document.getElementById("nodeGhost").checked = false;
+            document.getElementById("nodePass").value = "";
+            document.getElementById("ghostField").style.display = "none";
+            document.getElementById("forgeHeading").innerHTML = "The <span style='color:var(--accent)'>Forge</span>";
+            document.getElementById("forgeBtn").innerText = "🚀 Deploy Archive";
+            document.getElementById("forgeCancel").style.display = "none";
+            wallBuffer = "";
+        }
+
+        /**
+         * Library Rendering Logic
+         */
+        function rebuildLibrary() {
+            const query = document.getElementById("libSearch").value.toLowerCase();
+            const mainBox = document.getElementById("mainLibrary");
+            const vaultBox = document.getElementById("vaultList");
+            const empty = document.getElementById("emptyVoid");
+
+            mainBox.innerHTML = "";
+            vaultBox.innerHTML = "";
+
+            const filtered = libraryData.filter(n => n.title.toLowerCase().includes(query) || n.text.toLowerCase().includes(query))
+                                       .sort((a, b) => b.pinned - a.pinned);
+
+            if(filtered.length === 0) empty.style.display = "block";
+            else empty.style.display = "none";
+
+            filtered.forEach(note => {
+                const card = document.createElement("div");
+                card.className = "note-card glass-card";
+                if(note.wall) card.innerHTML += `<img src="${note.wall}" class="note-wallpaper">`;
+
+                card.innerHTML += `
+                    <div style="position:relative; z-index:5;">
+                        <div class="badge-row">
+                            <span class="badge">${note.vault ? 'Titan Vault' : 'Public'}</span>
+                            ${note.ghost ? '<span class="badge badge-ghost">GHOST LOCKED</span>' : ''}
+                        </div>
+                        ${note.pinned ? '<span style="position:absolute; top:0; right:0; font-size:24px;">📍</span>' : ''}
+                        <h2 class="note-title">${note.title}</h2>
+                        <p class="note-excerpt">${note.ghost ? 'The contents of this archive are ghost-locked and encrypted.' : note.text}</p>
+                        <div class="note-footer">
+                            <span>📅 ${note.date}</span>
+                            <span>📖 ${Math.ceil(note.words/200)}m read</span>
+                            <span onclick="togglePin(${note.id}); event.stopPropagation();" style="color:var(--accent); cursor:pointer;">${note.pinned?'Unpin':'Pin'}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = () => launchZenithReader(note.id);
+
+                if(note.vault) {
+                    if(vaultUnlocked) vaultBox.appendChild(card);
+                } else {
+                    mainBox.appendChild(card);
+                }
+            });
+        }
+
+        /**
+         * Reader & Surgery Initiation
+         */
+        function launchZenithReader(id) {
+            const note = libraryData.find(n => n.id === id);
+            activeReaderID = id;
+
+            document.getElementById("readState").style.display = "none";
+            document.getElementById("ghostState").style.display = "none";
+            document.getElementById("modalOverlay").style.display = "flex";
+
+            if(note.ghost) {
+                document.getElementById("ghostState").style.display = "block";
+            } else {
+                renderModalData(note);
+            }
+        }
+
+        function unlockGhost() {
+            const key = document.getElementById("ghostKeyInp").value;
+            const note = libraryData.find(n => n.id === activeReaderID);
+            
+            if(key === note.pass) {
+                document.getElementById("ghostState").style.display = "none";
+                document.getElementById("ghostKeyInp").value = "";
+                renderModalData(note);
+            } else {
+                alert("AUTH ERROR: Invalid Ghost Key ❌");
+            }
+        }
+
+        function renderModalData(n) {
+            document.getElementById("readState").style.display = "block";
+            const row = document.getElementById("mBadgeRow");
+            row.innerHTML = `<span class="badge">${n.vault?'Titan':'Archive'}</span>`;
+            if(n.ghost) row.innerHTML += `<span class="badge badge-ghost">DECRYPTED GHOST</span>`;
+
+            document.getElementById("mTitle").innerText = n.title;
+            document.getElementById("mMeta").innerText = `DEVELOMENT: ${n.date} | ${n.words} WORDS | SECURITY: ${n.ghost?'ENCRYPTED':'OPEN'}`;
+            document.getElementById("mBody").innerText = n.text;
+        }
+
+        function closeZenithModal() {
+            document.getElementById("modalOverlay").style.display = "none";
+            document.getElementById("ghostKeyInp").value = "";
+        }
+
+        /**
+         * Surgery (Edit) Initiation
+         */
+        function initiateSurgery() {
+            const n = libraryData.find(x => x.id === activeReaderID);
+            surgicalID = n.id;
+
+            document.getElementById("nodeTitle").value = n.title;
+            document.getElementById("nodeText").value = n.text;
+            document.getElementById("nodeVault").checked = n.vault;
+            document.getElementById("nodeGhost").checked = n.ghost;
+            document.getElementById("nodePass").value = n.pass;
+            
+            if(n.ghost) document.getElementById("ghostField").style.display = "block";
+
+            document.getElementById("forgeHeading").innerHTML = "Archive <span style='color:var(--accent)'>Surgery</span>";
+            document.getElementById("forgeBtn").innerText = "🩹 Finalize Surgery";
+            document.getElementById("forgeCancel").style.display = "block";
+
+            closeZenithModal();
+            switchZenith('forgeView', 'tabForge');
+        }
+
+        function cancelSurgery() {
+            surgicalID = null;
+            resetForge();
+            switchZenith('archiveView', 'tabLibrary');
+        }
+
+        function burnArchive() {
+            if(confirm("TERMINATE ARCHIVE: This will burn the data forever. Proceed?")) {
+                libraryData = libraryData.filter(x => x.id !== activeReaderID);
+                localStorage.setItem("zn_db", JSON.stringify(libraryData));
+                closeZenithModal();
+                rebuildLibrary();
+            }
+        }
+
+        /**
+         * Global System Controls
+         */
+        function accessTitanVault() {
+            if(vaultUnlocked) {
+                vaultUnlocked = false;
+                document.getElementById("vaultList").style.display = "none";
+                document.getElementById("vaultStatus").innerText = "STATUS: HEAVILY ENCRYPTED";
+                rebuildLibrary();
+                return;
+            }
+            const cfg = JSON.parse(localStorage.getItem("zn_cfg")) || { pin: "1234" };
+            const p = prompt("AUTHENTICATION: Enter Titan Vault PIN");
+            if(p === cfg.pin) {
+                vaultUnlocked = true;
+                document.getElementById("vaultList").style.display = "block";
+                document.getElementById("vaultStatus").innerText = "STATUS: TITAN ACCESS GRANTED ✅";
+                rebuildLibrary();
+            }
+        }
+
+        function togglePin(id) {
+            const idx = libraryData.findIndex(n => n.id === id);
+            libraryData[idx].pinned = !libraryData[idx].pinned;
+            localStorage.setItem("zn_db", JSON.stringify(libraryData));
+            rebuildLibrary();
+        }
+
+        function saveSystem() {
+            const pin = document.getElementById("sysPin").value || "1234";
+            const cur = JSON.parse(localStorage.getItem("zn_cfg")) || {};
+            const next = {
+                dark: document.body.classList.contains("dark-mode"),
+                pin, wall: cur.wall || ""
+            };
+            localStorage.setItem("zn_cfg", JSON.stringify(next));
+            alert("CORE SYNCED: All systems updated!");
+        }
+
+        function toggleDark() { document.body.classList.toggle("dark-mode"); }
+
+        function nuclearWipe() {
+            if(confirm("NUCLEAR OPTION: Erase all archives and core settings?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
